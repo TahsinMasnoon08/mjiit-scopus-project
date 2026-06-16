@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Home | Scopus Dashboard</title>
 
   <style>
@@ -12,18 +13,26 @@
       font-family: "Segoe UI", Arial, sans-serif;
     }
 
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      overflow-x: hidden;
+    }
+
     body {
       background: #f4f7fb;
       color: #0f172a;
     }
 
     .navbar {
-      height: 72px;
+      min-height: 72px;
       background: #ffffff;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 35px;
+      gap: 16px;
+      padding: 16px 35px;
       box-shadow: 0 6px 24px rgba(15, 23, 42, 0.08);
       position: sticky;
       top: 0;
@@ -31,9 +40,10 @@
     }
 
     .logo {
-      font-size: 22px;
-      font-weight: 800;
+      font-size: clamp(19px, 2.5vw, 22px);
+      font-weight: 900;
       color: #1d4ed8;
+      line-height: 1.2;
     }
 
     .logout-btn {
@@ -42,37 +52,43 @@
       border-radius: 12px;
       background: #ef4444;
       color: white;
-      font-weight: 700;
+      font-weight: 800;
       cursor: pointer;
+      white-space: nowrap;
     }
 
     .container {
+      width: 100%;
+      max-width: 1600px;
+      margin: 0 auto;
       padding: 35px;
     }
 
     .hero {
       background: linear-gradient(135deg, #0f172a, #1d4ed8, #2563eb);
       color: white;
-      padding: 34px;
+      padding: clamp(24px, 4vw, 36px);
       border-radius: 26px;
       margin-bottom: 28px;
       box-shadow: 0 18px 45px rgba(37, 99, 235, 0.28);
     }
 
     .hero h1 {
-      font-size: 32px;
+      font-size: clamp(25px, 4vw, 36px);
       margin-bottom: 10px;
+      line-height: 1.2;
     }
 
     .hero p {
       color: #dbeafe;
       font-size: 15px;
-      line-height: 1.6;
+      line-height: 1.7;
+      max-width: 980px;
     }
 
     .summary-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 16px;
       margin-bottom: 25px;
     }
@@ -82,38 +98,43 @@
       padding: 20px;
       border-radius: 18px;
       box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+      min-width: 0;
     }
 
     .summary-card h3 {
       font-size: 13px;
       color: #64748b;
       margin-bottom: 8px;
+      line-height: 1.3;
     }
 
     .summary-card p {
-      font-size: 22px;
-      font-weight: 800;
+      font-size: clamp(22px, 3vw, 28px);
+      font-weight: 900;
       color: #0f172a;
+      line-height: 1.1;
     }
 
     .topic-search-card {
       background: white;
       border-radius: 24px;
-      padding: 25px;
+      padding: clamp(20px, 3vw, 26px);
       margin-bottom: 25px;
       box-shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
     }
 
     .topic-search-card h2 {
-      font-size: 23px;
+      font-size: clamp(20px, 3vw, 24px);
       margin-bottom: 8px;
       color: #0f172a;
+      line-height: 1.3;
     }
 
     .topic-search-card p {
       color: #64748b;
       font-size: 14px;
       margin-bottom: 16px;
+      line-height: 1.6;
     }
 
     .topic-search-box {
@@ -122,23 +143,40 @@
       margin-bottom: 16px;
     }
 
-    .topic-search-box input {
-      flex: 1;
+    .topic-search-box input,
+    .toolbar input {
+      width: 100%;
       padding: 14px;
       border: 1px solid #cbd5e1;
       border-radius: 14px;
       font-size: 15px;
+      outline: none;
+      background: #f8fafc;
+    }
+
+    .topic-search-box input:focus,
+    .toolbar input:focus {
+      background: white;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    .topic-search-box input {
+      flex: 1;
+      min-width: 180px;
     }
 
     .topic-search-box button,
-    .topic-buttons button {
+    .topic-buttons button,
+    .toolbar button {
       padding: 12px 18px;
       border: none;
       border-radius: 14px;
       background: #2563eb;
       color: white;
-      font-weight: 800;
+      font-weight: 900;
       cursor: pointer;
+      white-space: nowrap;
     }
 
     .topic-search-box .clear-btn {
@@ -160,7 +198,7 @@
 
     .topic-results {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 14px;
     }
 
@@ -169,13 +207,15 @@
       border-radius: 18px;
       padding: 16px;
       background: #f8fafc;
+      min-width: 0;
     }
 
     .topic-result-card h4 {
       font-size: 15px;
       margin-bottom: 8px;
       color: #0f172a;
-      line-height: 1.4;
+      line-height: 1.45;
+      word-break: break-word;
     }
 
     .topic-result-card h4 a {
@@ -191,6 +231,8 @@
       margin-bottom: 5px;
       font-size: 13px;
       color: #475569;
+      line-height: 1.5;
+      word-break: break-word;
     }
 
     .match-badge {
@@ -200,7 +242,7 @@
       border-radius: 999px;
       background: #dcfce7;
       color: #166534;
-      font-weight: 800;
+      font-weight: 900;
       font-size: 12px;
     }
 
@@ -217,45 +259,46 @@
 
     .toolbar input {
       flex: 1;
-      padding: 14px;
-      border: 1px solid #cbd5e1;
-      border-radius: 14px;
-      font-size: 15px;
+      min-width: 180px;
     }
 
     .toolbar button {
       padding: 14px 22px;
-      border: none;
-      border-radius: 14px;
-      background: #2563eb;
-      color: white;
-      font-weight: 800;
-      cursor: pointer;
     }
 
     .table-card {
       background: white;
       border-radius: 24px;
-      padding: 25px;
+      padding: clamp(18px, 3vw, 26px);
       box-shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
-      overflow-x: auto;
+      overflow: hidden;
     }
 
     .table-card h2 {
       margin-bottom: 6px;
-      font-size: 23px;
+      font-size: clamp(20px, 3vw, 24px);
     }
 
     .result-info {
       margin-bottom: 18px;
       color: #64748b;
       font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .table-scroll {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 16px;
+      border: 1px solid #e5e7eb;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 1250px;
+      min-width: 1050px;
+      background: white;
     }
 
     th {
@@ -265,6 +308,7 @@
       padding: 15px;
       font-size: 14px;
       border-bottom: 2px solid #dbeafe;
+      white-space: nowrap;
     }
 
     td {
@@ -279,15 +323,17 @@
     }
 
     .author-name {
-      font-weight: 800;
+      font-weight: 900;
       color: #0f172a;
-      min-width: 260px;
+      min-width: 230px;
+      line-height: 1.45;
     }
 
     .small-muted {
       font-size: 12px;
       color: #64748b;
       margin-top: 4px;
+      line-height: 1.45;
     }
 
     .badge {
@@ -296,8 +342,9 @@
       border-radius: 999px;
       background: #dcfce7;
       color: #166534;
-      font-weight: 800;
+      font-weight: 900;
       font-size: 13px;
+      white-space: nowrap;
     }
 
     .pending {
@@ -313,29 +360,30 @@
     .paper-list li {
       margin-bottom: 8px;
       line-height: 1.4;
+      word-break: break-word;
     }
 
     .selected-paper-list li {
-  padding: 10px;
-  border: 1px solid #dbeafe;
-  border-radius: 14px;
-  background: #f8fbff;
-}
+      padding: 10px;
+      border: 1px solid #dbeafe;
+      border-radius: 14px;
+      background: #f8fbff;
+    }
 
-.paper-rank-badge {
-  display: inline-block;
-  margin-bottom: 6px;
-  padding: 4px 9px;
-  border-radius: 999px;
-  background: #eff6ff;
-  color: #1d4ed8;
-  font-size: 12px;
-  font-weight: 800;
-}
+    .paper-rank-badge {
+      display: inline-block;
+      margin-bottom: 6px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 12px;
+      font-weight: 900;
+    }
 
     .paper-list a {
       color: #2563eb;
-      font-weight: 700;
+      font-weight: 800;
       text-decoration: none;
     }
 
@@ -350,8 +398,9 @@
       border-radius: 12px;
       background: #0f172a;
       color: white;
-      font-weight: 700;
+      font-weight: 800;
       cursor: pointer;
+      white-space: nowrap;
     }
 
     .status {
@@ -359,9 +408,10 @@
       border-radius: 999px;
       background: #e0f2fe;
       color: #075985;
-      font-weight: 800;
+      font-weight: 900;
       font-size: 13px;
       display: inline-block;
+      white-space: nowrap;
     }
 
     .loading {
@@ -382,13 +432,12 @@
 
     .modal {
       background: white;
-      width: 100%;
-      max-width: 900px;
+      width: min(100%, 900px);
       max-height: 85vh;
       overflow-y: auto;
       border-radius: 24px;
-      padding: 28px;
-      box-shadow: 0 30px 90px rgba(0,0,0,0.35);
+      padding: clamp(20px, 3vw, 28px);
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.35);
     }
 
     .modal-header {
@@ -397,11 +446,17 @@
       gap: 16px;
       align-items: center;
       margin-bottom: 18px;
+      position: sticky;
+      top: 0;
+      background: white;
+      padding-bottom: 12px;
+      z-index: 2;
     }
 
     .modal-header h2 {
       color: #0f172a;
-      font-size: 22px;
+      font-size: clamp(19px, 3vw, 22px);
+      line-height: 1.3;
     }
 
     .close-btn {
@@ -411,7 +466,8 @@
       padding: 9px 14px;
       border-radius: 10px;
       cursor: pointer;
-      font-weight: 800;
+      font-weight: 900;
+      flex-shrink: 0;
     }
 
     .modal-paper {
@@ -420,38 +476,52 @@
       border-radius: 16px;
       margin-bottom: 12px;
       background: #f8fafc;
+      word-break: break-word;
     }
 
     .modal-paper h4 {
       margin-bottom: 8px;
       color: #0f172a;
+      line-height: 1.45;
     }
 
     .modal-paper p {
       margin-bottom: 5px;
       color: #475569;
       font-size: 14px;
+      line-height: 1.5;
     }
 
     .modal-paper a {
       color: #2563eb;
-      font-weight: 800;
+      font-weight: 900;
       text-decoration: none;
     }
 
     .error-text {
       color: #dc2626;
-      font-weight: 700;
+      font-weight: 800;
+    }
+
+    @media (max-width: 1200px) {
+      .summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .topic-results {
+        grid-template-columns: 1fr;
+      }
     }
 
     @media (max-width: 900px) {
-      .summary-grid {
-        grid-template-columns: repeat(2, 1fr);
+      .container {
+        padding: 24px 18px;
       }
 
       .toolbar,
       .topic-search-box {
         flex-direction: column;
+        align-items: stretch;
       }
 
       .toolbar button,
@@ -459,8 +529,57 @@
         width: 100%;
       }
 
-      .topic-results {
+      .topic-buttons button {
+        flex: 1 1 calc(50% - 10px);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .navbar {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 16px 18px;
+      }
+
+      .logout-btn {
+        width: 100%;
+      }
+
+      .container {
+        padding: 18px 14px;
+      }
+
+      .hero,
+      .topic-search-card,
+      .table-card {
+        border-radius: 20px;
+      }
+
+      .summary-grid {
         grid-template-columns: 1fr;
+      }
+
+      .summary-card {
+        padding: 18px;
+      }
+
+      .topic-buttons {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .topic-buttons button {
+        width: 100%;
+      }
+
+      .modal-overlay {
+        padding: 10px;
+        align-items: flex-start;
+      }
+
+      .modal {
+        max-height: 92vh;
+        border-radius: 18px;
       }
     }
   </style>
@@ -477,7 +596,7 @@
       <h1>MJIIT Researcher Monitoring Dashboard</h1>
       <p>
         This dashboard displays selected MJIIT researchers from Supabase.
-        Author metrics such as Scopus Author ID, total documents, and h-index are stored in the database.
+        Author metrics such as Scopus Author ID and h-index are stored in the database.
         Publications are linked to each researcher and open directly in Scopus.
       </p>
     </div>
@@ -494,20 +613,21 @@
       </div>
 
       <div class="summary-card">
-        <h3>Database</h3>
-        <p style="font-size:18px;color:#166534;">Supabase Active</p>
+        <h3>Updated Researchers</h3>
+        <p id="updatedResearchers">0</p>
       </div>
 
       <div class="summary-card">
-        <h3>Scopus Links</h3>
-        <p style="font-size:18px;color:#1d4ed8;">Enabled</p>
+        <h3>Pending Researchers</h3>
+        <p id="pendingResearchers">0</p>
       </div>
     </div>
 
     <div class="topic-search-card">
       <h2>Topic / Journal Smart Search</h2>
       <p>
-        Search research topics such as robotics, AI, drone, cybersecurity, communication, medical imaging, or any journal/topic keyword.
+        Search research topics such as robotics, AI, drone, cybersecurity,
+        communication, medical imaging, or any journal/topic keyword.
       </p>
 
       <div class="topic-search-box">
@@ -553,26 +673,27 @@
         Click “More” to view publications belonging only to that selected researcher.
       </p>
 
-      <table>
-        <thead>
-          <tr>
-            <th>No.</th>
-            <th>Author Name</th>
-            <th>Scopus Author ID</th>
-            <th>Total Documents</th>
-            <th>H-Index</th>
-            <th>Selected Papers</th>
-            <th>More</th>
-            <th>Status</th>
-          </tr>
-        </thead>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>No.</th>
+              <th>Author Name</th>
+              <th>Scopus Author ID</th>
+              <th>H-Index</th>
+              <th>Selected Papers</th>
+              <th>More</th>
+              <th>Status</th>
+            </tr>
+          </thead>
 
-        <tbody id="researcherTable">
-          <tr>
-            <td colspan="8">Loading researchers from Supabase...</td>
-          </tr>
-        </tbody>
-      </table>
+          <tbody id="researcherTable">
+            <tr>
+              <td colspan="7">Loading researchers from Supabase...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -672,12 +793,21 @@
       ]
     };
 
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
     async function loadDashboard() {
       const table = document.getElementById("researcherTable");
 
       table.innerHTML = `
         <tr>
-          <td colspan="8">Loading dashboard data from Supabase...</td>
+          <td colspan="7">Loading dashboard data from Supabase...</td>
         </tr>
       `;
 
@@ -689,8 +819,8 @@
       if (researcherError) {
         table.innerHTML = `
           <tr>
-            <td colspan="8" class="error-text">
-              Failed to load researchers: ${researcherError.message}
+            <td colspan="7" class="error-text">
+              Failed to load researchers: ${escapeHtml(researcherError.message)}
             </td>
           </tr>
         `;
@@ -700,35 +830,61 @@
       const { data: publicationData, error: publicationError } = await supabaseClient
         .from("publications")
         .select("*")
-        .order("publication_date", { ascending: false });
+        .order("publication_date", { ascending: false })
+        .range(0, 5000);
 
       if (publicationError) {
         table.innerHTML = `
           <tr>
-            <td colspan="8" class="error-text">
-              Failed to load publications: ${publicationError.message}
+            <td colspan="7" class="error-text">
+              Failed to load publications: ${escapeHtml(publicationError.message)}
             </td>
           </tr>
         `;
         return;
       }
 
+      const { count: exactPublicationCount, error: countError } = await supabaseClient
+        .from("publications")
+        .select("*", { count: "exact", head: true });
+
+      if (countError) {
+        console.error("Publication count error:", countError.message);
+      }
+
       researchers = researcherData || [];
       publications = publicationData || [];
 
+      const updatedResearchers = researchers.filter((researcher) => {
+        return (
+          researcher.h_index_status === "updated" ||
+          researcher.h_index_update_method === "rpa" ||
+          researcher.update_method === "rpa" ||
+          (
+            researcher.h_index !== null &&
+            researcher.h_index !== undefined &&
+            researcher.h_index !== ""
+          )
+        );
+      }).length;
+
+      const pendingResearchers = researchers.length - updatedResearchers;
+
       document.getElementById("totalResearchers").innerText = researchers.length;
-      document.getElementById("totalPublications").innerText = publications.length;
+      document.getElementById("totalPublications").innerText = exactPublicationCount || 0;
+      document.getElementById("updatedResearchers").innerText = updatedResearchers;
+      document.getElementById("pendingResearchers").innerText = pendingResearchers;
 
       renderResearchers(researchers);
       smartTopicSearch();
     }
 
     function getPublicationsForResearcher(researcherId) {
-      return publications.filter(pub => pub.researcher_id === researcherId);
+      return publications.filter(pub => String(pub.researcher_id) === String(researcherId));
     }
 
     function getAuthorNameById(researcherId) {
-      const researcher = researchers.find((r) => r.id === researcherId);
+      const researcher = researchers.find((r) => String(r.id) === String(researcherId));
       return researcher ? researcher.name : "Unknown author";
     }
 
@@ -782,7 +938,7 @@
 
       if (matchedPublications.length === 0) {
         topicResults.innerHTML = `
-          <p class="small-muted">No matching publications found for "${input}".</p>
+          <p class="small-muted">No matching publications found for "${escapeHtml(input)}".</p>
         `;
         return;
       }
@@ -793,16 +949,16 @@
         return `
           <div class="topic-result-card">
             <h4>
-              <a href="${paper.scopus_link || "#"}" target="_blank">
-                ${paper.title}
+              <a href="${escapeHtml(paper.scopus_link || "#")}" target="_blank" rel="noopener noreferrer">
+                ${escapeHtml(paper.title || "Untitled publication")}
               </a>
             </h4>
 
-            <p><strong>Author:</strong> ${authorName}</p>
-            <p><strong>Journal:</strong> ${paper.journal || "No journal"}</p>
-            <p><strong>Date:</strong> ${paper.publication_date || "No date"}</p>
-            <p><strong>DOI:</strong> ${paper.doi || "No DOI"}</p>
-            <p><strong>Scopus Document ID:</strong> ${paper.scopus_document_id || "Not available"}</p>
+            <p><strong>Author:</strong> ${escapeHtml(authorName)}</p>
+            <p><strong>Journal:</strong> ${escapeHtml(paper.journal || "No journal")}</p>
+            <p><strong>Date:</strong> ${escapeHtml(paper.publication_date || "No date")}</p>
+            <p><strong>DOI:</strong> ${escapeHtml(paper.doi || "No DOI")}</p>
+            <p><strong>Scopus Document ID:</strong> ${escapeHtml(paper.scopus_document_id || "Not available")}</p>
 
             <span class="match-badge">Topic Match</span>
           </div>
@@ -823,13 +979,34 @@
       document.getElementById("topicResultInfo").innerText = "No topic search yet.";
     }
 
+    function findScopusLinkForSelectedPaper(researcherId, selectedTitle) {
+      if (!selectedTitle) return "#";
+
+      const normalize = (text) =>
+        String(text || "")
+          .toLowerCase()
+          .replace(/\s+/g, " ")
+          .trim();
+
+      const selected = normalize(selectedTitle);
+
+      const matchedPaper = publications.find((paper) => {
+        return (
+          String(paper.researcher_id) === String(researcherId) &&
+          normalize(paper.title) === selected
+        );
+      });
+
+      return matchedPaper?.scopus_link || "#";
+    }
+
     function renderResearchers(list) {
       const table = document.getElementById("researcherTable");
 
       if (!list || list.length === 0) {
         table.innerHTML = `
           <tr>
-            <td colspan="8">No researchers found in database.</td>
+            <td colspan="7">No researchers found in database.</td>
           </tr>
         `;
         return;
@@ -842,13 +1019,14 @@
 
         const selectedPaper1Title = researcher.selected_paper_1_title;
         const selectedPaper2Title = researcher.selected_paper_2_title;
-        const selectedPaper1Link =
-  researcher.selected_paper_1_link ||
-  findScopusLinkForSelectedPaper(researcher.id, selectedPaper1Title);
 
-const selectedPaper2Link =
-  researcher.selected_paper_2_link ||
-  findScopusLinkForSelectedPaper(researcher.id, selectedPaper2Title);
+        const selectedPaper1Link =
+          researcher.selected_paper_1_link ||
+          findScopusLinkForSelectedPaper(researcher.id, selectedPaper1Title);
+
+        const selectedPaper2Link =
+          researcher.selected_paper_2_link ||
+          findScopusLinkForSelectedPaper(researcher.id, selectedPaper2Title);
 
         const hIndexNumber = Number(researcher.h_index);
         const selectedPaper1Label = Number.isFinite(hIndexNumber) ? hIndexNumber : "-";
@@ -860,8 +1038,8 @@ const selectedPaper2Link =
               ${selectedPaper1Title ? `
                 <li>
                   <span class="paper-rank-badge">Paper ${selectedPaper1Label}</span>
-                  <a href="${selectedPaper1Link}" target="_blank">
-                    ${selectedPaper1Title}
+                  <a href="${escapeHtml(selectedPaper1Link)}" target="_blank" rel="noopener noreferrer">
+                    ${escapeHtml(selectedPaper1Title)}
                   </a>
                   <div class="small-muted">
                     Selected by RPA based on current H-index from newest-to-oldest list
@@ -872,8 +1050,8 @@ const selectedPaper2Link =
               ${selectedPaper2Title ? `
                 <li>
                   <span class="paper-rank-badge">Paper ${selectedPaper2Label}</span>
-                  <a href="${selectedPaper2Link}" target="_blank">
-                    ${selectedPaper2Title}
+                  <a href="${escapeHtml(selectedPaper2Link)}" target="_blank" rel="noopener noreferrer">
+                    ${escapeHtml(selectedPaper2Title)}
                   </a>
                   <div class="small-muted">
                     Next paper after current H-index from newest-to-oldest list
@@ -885,7 +1063,6 @@ const selectedPaper2Link =
         }
 
         const scopusId = researcher.scopus_author_id || "Pending";
-        const totalDocs = researcher.total_documents ?? "-";
         const hIndex = researcher.h_index ?? "-";
 
         return `
@@ -893,24 +1070,22 @@ const selectedPaper2Link =
             <td>${index + 1}</td>
 
             <td class="author-name">
-              ${researcher.name}
-              <div class="small-muted">Researcher ID: ${researcher.id}</div>
+              ${escapeHtml(researcher.name)}
+              <div class="small-muted">Researcher ID: ${escapeHtml(researcher.id)}</div>
             </td>
 
             <td>
               <span class="${scopusId === "Pending" ? "badge pending" : "badge"}">
-                ${scopusId}
+                ${escapeHtml(scopusId)}
               </span>
             </td>
 
-            <td>${totalDocs}</td>
-
-            <td><span class="badge">${hIndex}</span></td>
+            <td><span class="badge">${escapeHtml(hIndex)}</span></td>
 
             <td>${paperHtml}</td>
 
             <td>
-              <button class="more-btn" onclick="openMore(${researcher.id})">
+              <button class="more-btn" onclick="openMore('${escapeHtml(researcher.id)}')">
                 More
               </button>
             </td>
@@ -926,12 +1101,19 @@ const selectedPaper2Link =
     }
 
     function openMore(researcherId) {
-      const researcher = researchers.find(r => r.id === researcherId);
+      const researcher = researchers.find(r => String(r.id) === String(researcherId));
       const authorPapers = getPublicationsForResearcher(researcherId);
 
       const modal = document.getElementById("paperModal");
       const modalTitle = document.getElementById("modalTitle");
       const modalContent = document.getElementById("modalContent");
+
+      if (!researcher) {
+        modalTitle.innerText = "Publications";
+        modalContent.innerHTML = `<p>Researcher not found.</p>`;
+        modal.style.display = "flex";
+        return;
+      }
 
       modalTitle.innerText = `${researcher.name} - Publications`;
 
@@ -943,15 +1125,15 @@ const selectedPaper2Link =
         modalContent.innerHTML = authorPapers.map(paper => `
           <div class="modal-paper">
             <h4>
-              <a href="${paper.scopus_link || "#"}" target="_blank">
-                ${paper.title}
+              <a href="${escapeHtml(paper.scopus_link || "#")}" target="_blank" rel="noopener noreferrer">
+                ${escapeHtml(paper.title || "Untitled publication")}
               </a>
             </h4>
-            <p><strong>DOI:</strong> ${paper.doi || "No DOI"}</p>
-            <p><strong>Scopus Document ID:</strong> ${paper.scopus_document_id || "Not available"}</p>
-            <p><strong>Journal:</strong> ${paper.journal || "No journal"}</p>
-            <p><strong>Date:</strong> ${paper.publication_date || "No date"}</p>
-            <a href="${paper.scopus_link || "#"}" target="_blank">Open in Scopus</a>
+            <p><strong>DOI:</strong> ${escapeHtml(paper.doi || "No DOI")}</p>
+            <p><strong>Scopus Document ID:</strong> ${escapeHtml(paper.scopus_document_id || "Not available")}</p>
+            <p><strong>Journal:</strong> ${escapeHtml(paper.journal || "No journal")}</p>
+            <p><strong>Date:</strong> ${escapeHtml(paper.publication_date || "No date")}</p>
+            <a href="${escapeHtml(paper.scopus_link || "#")}" target="_blank" rel="noopener noreferrer">Open in Scopus</a>
           </div>
         `).join("");
       }
@@ -967,43 +1149,29 @@ const selectedPaper2Link =
       const keyword = document.getElementById("filterInput").value.toLowerCase();
 
       const filtered = researchers.filter(r =>
-        r.name.toLowerCase().includes(keyword) ||
+        String(r.name || "").toLowerCase().includes(keyword) ||
         String(r.scopus_author_id || "").toLowerCase().includes(keyword)
       );
 
       renderResearchers(filtered);
     }
 
+    async function logout() {
+      if (typeof supabaseClient !== "undefined") {
+        await supabaseClient.auth.signOut();
+      }
+
+      window.location.href = "login.html";
+    }
+
+    window.addEventListener("click", function(event) {
+      const modal = document.getElementById("paperModal");
+      if (event.target === modal) {
+        closeModal();
+      }
+    });
+
     loadDashboard();
-
-    function getPublicationsForResearcher(researcherId) {
-  return publications.filter(pub => pub.researcher_id === researcherId);
-}
-
-function findScopusLinkForSelectedPaper(researcherId, selectedTitle) {
-  if (!selectedTitle) return "#";
-
-  const normalize = (text) =>
-    String(text || "")
-      .toLowerCase()
-      .replace(/\s+/g, " ")
-      .trim();
-
-  const selected = normalize(selectedTitle);
-
-  const matchedPaper = publications.find((paper) => {
-    return (
-      paper.researcher_id === researcherId &&
-      normalize(paper.title) === selected
-    );
-  });
-
-
-
-  return matchedPaper?.scopus_link || "#";
-
-  
-}
   </script>
 </body>
 </html>
