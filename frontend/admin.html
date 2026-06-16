@@ -1,15 +1,1162 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Admin Page - Scopus Dashboard</title>
-</head>
-<body>
-  <h1>Administrative Page</h1>
-  <p>Welcome admin. We will build this page later.</p>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard | Scopus Dashboard</title>
 
-  <button onclick="logout()">Logout</button>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      overflow-x: hidden;
+    }
+
+    body {
+      min-height: 100vh;
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+
+    .navbar {
+      min-height: 72px;
+      background: linear-gradient(135deg, #020617, #0f172a);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 40px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25);
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .navbar h1 {
+      font-size: clamp(19px, 2.5vw, 23px);
+      line-height: 1.2;
+    }
+
+    .navbar span {
+      color: #38bdf8;
+    }
+
+    .nav-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .nav-btn {
+      border: none;
+      border-radius: 12px;
+      padding: 10px 16px;
+      cursor: pointer;
+      font-weight: 800;
+      background: #e0f2fe;
+      color: #0369a1;
+      white-space: nowrap;
+    }
+
+    .logout-btn {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 35px 40px;
+    }
+
+    .welcome-card,
+    .card,
+    .form-card,
+    .table-card {
+      background: white;
+      box-shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
+    }
+
+    .welcome-card {
+      border-radius: 22px;
+      padding: clamp(22px, 3vw, 30px);
+      margin-bottom: 28px;
+    }
+
+    .welcome-card h2 {
+      font-size: clamp(24px, 4vw, 30px);
+      margin-bottom: 8px;
+      line-height: 1.2;
+    }
+
+    .welcome-card p {
+      color: #64748b;
+      font-size: 15px;
+      line-height: 1.7;
+      max-width: 920px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 22px;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      border-radius: 20px;
+      padding: 24px;
+      min-width: 0;
+    }
+
+    .card p {
+      color: #64748b;
+      font-size: 14px;
+      margin-bottom: 10px;
+      line-height: 1.3;
+    }
+
+    .card h3 {
+      font-size: clamp(30px, 4vw, 38px);
+      color: #0f172a;
+      line-height: 1.1;
+    }
+
+    .form-card {
+      border-radius: 22px;
+      padding: clamp(20px, 3vw, 26px);
+      margin-bottom: 30px;
+    }
+
+    .form-card h2,
+    .table-card h2 {
+      font-size: clamp(20px, 3vw, 24px);
+      margin-bottom: 18px;
+      line-height: 1.3;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .form-group {
+      min-width: 0;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #334155;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .form-group input {
+      width: 100%;
+      height: 48px;
+      border-radius: 14px;
+      border: 1px solid #cbd5e1;
+      padding: 0 14px;
+      font-size: 14px;
+      background: #f8fafc;
+      outline: none;
+    }
+
+    .form-group input:focus {
+      border-color: #2563eb;
+      background: white;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    .form-actions {
+      margin-top: 20px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .primary-btn,
+    .clear-btn,
+    .action-btn,
+    .close-btn {
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+    .primary-btn {
+      border: none;
+      border-radius: 14px;
+      padding: 13px 18px;
+      background: linear-gradient(135deg, #2563eb, #0891b2);
+      color: white;
+    }
+
+    .clear-btn {
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 13px 18px;
+      background: white;
+      color: #334155;
+    }
+
+    .table-card {
+      border-radius: 22px;
+      padding: clamp(20px, 3vw, 26px);
+      overflow: hidden;
+    }
+
+    .table-scroll {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1050px;
+      background: white;
+    }
+
+    th,
+    td {
+      padding: 14px;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: left;
+      font-size: 14px;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f8fafc;
+      color: #334155;
+      font-size: 13px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    td {
+      color: #334155;
+    }
+
+    .status {
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      display: inline-block;
+      white-space: nowrap;
+    }
+
+    .status-updated {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-failed {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .message {
+      display: none;
+      margin-bottom: 20px;
+      padding: 14px;
+      border-radius: 14px;
+      font-weight: 700;
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+
+    .success {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .info {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .action-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      border: none;
+      border-radius: 10px;
+      padding: 8px 12px;
+      background: #dbeafe;
+      color: #1d4ed8;
+      white-space: nowrap;
+    }
+
+    .action-btn:hover {
+      opacity: 0.9;
+    }
+
+    .delete-btn {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .link-btn {
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .link-btn:hover {
+      text-decoration: underline;
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.65);
+      z-index: 9999;
+      padding: 30px;
+      overflow-y: auto;
+    }
+
+    .modal-box {
+      background: white;
+      border-radius: 22px;
+      width: min(100%, 1250px);
+      max-height: 90vh;
+      margin: 0 auto;
+      overflow: hidden;
+      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.35);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      padding: 22px 28px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      flex-shrink: 0;
+    }
+
+    .modal-header h2 {
+      font-size: clamp(20px, 3vw, 25px);
+      margin-bottom: 5px;
+      line-height: 1.3;
+    }
+
+    .modal-header p {
+      color: #64748b;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .close-btn {
+      border: none;
+      background: #fee2e2;
+      color: #991b1b;
+      font-size: 28px;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      flex-shrink: 0;
+    }
+
+    .modal-content {
+      padding: 24px;
+      overflow: auto;
+      max-height: 70vh;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .publication-table {
+      min-width: 1000px;
+    }
+
+    .publication-title {
+      max-width: 430px;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    @media (max-width: 1200px) {
+      .cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 900px) {
+      .navbar {
+        padding: 16px 20px;
+      }
+
+      .container {
+        padding: 25px 20px;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .navbar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .nav-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .nav-btn {
+        width: 100%;
+      }
+
+      .container {
+        padding: 18px 14px;
+      }
+
+      .cards {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .welcome-card,
+      .form-card,
+      .table-card {
+        border-radius: 18px;
+      }
+
+      .form-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .primary-btn,
+      .clear-btn {
+        width: 100%;
+      }
+
+      .modal-overlay {
+        padding: 10px;
+      }
+
+      .modal-box {
+        border-radius: 18px;
+        max-height: 92vh;
+      }
+
+      .modal-header {
+        padding: 18px;
+        align-items: flex-start;
+      }
+
+      .modal-content {
+        padding: 14px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="navbar">
+    <h1>Scopus <span>Admin Dashboard</span></h1>
+
+    <div class="nav-actions">
+      <button class="nav-btn" onclick="goHome()">View Website</button>
+      <button class="nav-btn logout-btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div id="messageBox" class="message"></div>
+
+    <div class="welcome-card">
+      <h2>Welcome, Admin</h2>
+      <p>
+        Manage lecturers, view imported Scopus publications, delete incorrect publications,
+        and remove lecturers from the database.
+      </p>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <p>Total Researchers</p>
+        <h3 id="totalResearchers">0</h3>
+      </div>
+
+      <div class="card">
+        <p>Total Publications</p>
+        <h3 id="totalPublications">0</h3>
+      </div>
+
+      <div class="card">
+        <p>Updated Researchers</p>
+        <h3 id="updatedResearchers">0</h3>
+      </div>
+
+      <div class="card">
+        <p>Pending Researchers</p>
+        <h3 id="pendingResearchers">0</h3>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <h2>Add New Lecturer</h2>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="lecturerName">Lecturer Name *</label>
+          <input type="text" id="lecturerName" placeholder="Example: Liyana Adilla Burhanuddin" />
+        </div>
+
+        <div class="form-group">
+          <label for="scopusAuthorId">Scopus Author ID *</label>
+          <input type="text" id="scopusAuthorId" placeholder="Example: 56105259400" />
+        </div>
+
+        <div class="form-group">
+          <label for="scopusProfileUrl">Scopus Profile URL</label>
+          <input type="text" id="scopusProfileUrl" placeholder="Auto-generated if left empty" />
+        </div>
+
+        <div class="form-group">
+          <label for="searchKeyword">Search Keyword</label>
+          <input type="text" id="searchKeyword" placeholder="Default: same as lecturer name" />
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="primary-btn" onclick="addLecturer()">Add Lecturer</button>
+        <button class="clear-btn" onclick="clearLecturerForm()">Clear</button>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <h2>Researchers</h2>
+
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Scopus ID</th>
+              <th>Total Docs</th>
+              <th>H-Index</th>
+              <th>H-index Status</th>
+              <th>Update Method</th>
+              <th>Last Checked</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+
+          <tbody id="researchersTable">
+            <tr>
+              <td colspan="8">Loading researchers...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="publicationsModal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <h2 id="modalResearcherName">Publications</h2>
+          <p id="modalPublicationCount">Loading...</p>
+        </div>
+
+        <button class="close-btn" onclick="closePublicationsModal()">×</button>
+      </div>
+
+      <div class="modal-content">
+        <table class="publication-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Journal / Source</th>
+              <th>Year / Date</th>
+              <th>DOI</th>
+              <th>Scopus Link</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+
+          <tbody id="publicationsTableBody">
+            <tr>
+              <td colspan="6">Loading publications...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="auth.js"></script>
+
+  <script>
+    let researchersCache = [];
+    let currentResearcherId = null;
+    let currentResearcherName = "";
+
+    function getSupabaseClient() {
+      if (typeof supabaseClient !== "undefined") return supabaseClient;
+
+      if (typeof supabase !== "undefined" && supabase.auth && supabase.from) {
+        return supabase;
+      }
+
+      return null;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function showMessage(message, type = "info") {
+      const box = document.getElementById("messageBox");
+      box.textContent = message;
+      box.className = "message " + type;
+      box.style.display = "block";
+
+      setTimeout(() => {
+        box.style.display = "none";
+      }, 7000);
+    }
+
+    function getResearcherId(researcher) {
+      return researcher.id ?? researcher.researcher_id ?? researcher.author_id;
+    }
+
+    function getResearcherProfileUrl(researcher) {
+      return researcher.scopus_profile_url || researcher.profile_url || researcher.profile_link || "";
+    }
+
+    function getHIndexStatus(researcher) {
+      if (researcher.h_index_status) return researcher.h_index_status;
+      if (researcher.h_index !== null && researcher.h_index !== undefined && researcher.h_index !== "") return "updated";
+      return "pending";
+    }
+
+    function getUpdateMethod(researcher) {
+      return researcher.h_index_update_method || researcher.update_method || "-";
+    }
+
+    function getLastChecked(researcher) {
+      return researcher.h_index_last_checked || researcher.last_checked || researcher.updated_at || null;
+    }
+
+    async function checkAdminAccess() {
+      const db = getSupabaseClient();
+
+      if (!db) {
+        alert("Supabase connection not found. Please check auth.js.");
+        window.location.href = "login.html";
+        return false;
+      }
+
+      const { data: sessionData, error: sessionError } = await db.auth.getSession();
+
+      if (sessionError || !sessionData.session) {
+        window.location.href = "login.html";
+        return false;
+      }
+
+      const user = sessionData.session.user;
+
+      const { data: profile, error } = await db
+        .from("user_profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      if (error || !profile) {
+        alert("No user role found.");
+        window.location.href = "login.html";
+        return false;
+      }
+
+      if (profile.role !== "admin") {
+        alert("Access denied. Admin only.");
+        window.location.href = "home.html";
+        return false;
+      }
+
+      return true;
+    }
+
+    async function loadDashboardData() {
+      const db = getSupabaseClient();
+
+      if (!db) {
+        showMessage("Supabase connection not found.", "error");
+        return;
+      }
+
+      const { data: researchers, error: researcherError } = await db
+        .from("researchers")
+        .select("*")
+        .order("name", { ascending: true });
+
+      if (researcherError) {
+        showMessage("Failed to load researchers: " + researcherError.message, "error");
+        return;
+      }
+
+      const { count: publicationCount, error: publicationError } = await db
+        .from("publications")
+        .select("*", { count: "exact", head: true });
+
+      if (publicationError) {
+        showMessage("Failed to count publications: " + publicationError.message, "error");
+        return;
+      }
+
+      researchersCache = researchers || [];
+      renderStats(researchersCache, publicationCount || 0);
+      renderResearchersTable(researchersCache);
+    }
+
+    function renderStats(researchers, publicationCount) {
+      const totalResearchers = researchers.length;
+      const updatedResearchers = researchers.filter(researcher => getHIndexStatus(researcher) === "updated").length;
+      const pendingResearchers = researchers.filter(researcher => getHIndexStatus(researcher) === "pending").length;
+
+      document.getElementById("totalResearchers").textContent = totalResearchers;
+      document.getElementById("totalPublications").textContent = publicationCount;
+      document.getElementById("updatedResearchers").textContent = updatedResearchers;
+      document.getElementById("pendingResearchers").textContent = pendingResearchers;
+    }
+
+    function renderResearchersTable(researchers) {
+      const table = document.getElementById("researchersTable");
+
+      if (!researchers.length) {
+        table.innerHTML = `<tr><td colspan="8">No researchers found.</td></tr>`;
+        return;
+      }
+
+      table.innerHTML = researchers.map(researcher => {
+        const id = getResearcherId(researcher);
+        const safeId = escapeHtml(id);
+        const status = getHIndexStatus(researcher);
+        const statusClass = status === "updated" ? "status-updated" : status === "failed" ? "status-failed" : "status-pending";
+        const lastChecked = getLastChecked(researcher);
+        const profileUrl = getResearcherProfileUrl(researcher);
+
+        const nameHtml = profileUrl
+          ? `<a class="link-btn" href="${escapeHtml(profileUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(researcher.name || "-")}</a>`
+          : escapeHtml(researcher.name || "-");
+
+        return `
+          <tr>
+            <td>${nameHtml}</td>
+            <td>${escapeHtml(researcher.scopus_author_id || "-")}</td>
+            <td>${researcher.total_documents ?? "-"}</td>
+            <td>${researcher.h_index ?? "-"}</td>
+            <td><span class="status ${statusClass}">${escapeHtml(status)}</span></td>
+            <td>${escapeHtml(getUpdateMethod(researcher))}</td>
+            <td>${lastChecked ? new Date(lastChecked).toLocaleString() : "-"}</td>
+            <td>
+              <div class="action-group">
+                <button class="action-btn" onclick="viewPublicationsById('${safeId}')">View Publications</button>
+                <button class="action-btn delete-btn" onclick="deleteLecturer('${safeId}')">Delete</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function generateScopusProfileUrl(authorId) {
+      return `https://www.scopus.com/authid/detail.uri?authorId=${encodeURIComponent(authorId)}`;
+    }
+
+    function clearLecturerForm() {
+      document.getElementById("lecturerName").value = "";
+      document.getElementById("scopusAuthorId").value = "";
+      document.getElementById("scopusProfileUrl").value = "";
+      document.getElementById("searchKeyword").value = "";
+    }
+
+    function removeMissingColumnFromPayload(payload, errorMessage) {
+      const match = String(errorMessage).match(/'([^']+)' column/);
+      if (!match) return false;
+
+      const columnName = match[1];
+
+      if (Object.prototype.hasOwnProperty.call(payload, columnName)) {
+        delete payload[columnName];
+        return true;
+      }
+
+      return false;
+    }
+
+    async function insertResearcherWithFallback(db, payload) {
+      let currentPayload = { ...payload };
+
+      for (let attempt = 1; attempt <= 8; attempt++) {
+        const { data, error } = await db
+          .from("researchers")
+          .insert([currentPayload])
+          .select()
+          .single();
+
+        if (!error) return { data, error: null };
+
+        const removed = removeMissingColumnFromPayload(currentPayload, error.message);
+
+        if (!removed) return { data: null, error };
+      }
+
+      return {
+        data: null,
+        error: {
+          message: "Insert failed because too many columns did not match your researchers table."
+        }
+      };
+    }
+
+    async function addLecturer() {
+      const db = getSupabaseClient();
+
+      if (!db) {
+        showMessage("Supabase connection not found.", "error");
+        return;
+      }
+
+      const name = document.getElementById("lecturerName").value.trim();
+      const scopusAuthorId = document.getElementById("scopusAuthorId").value.trim();
+      let scopusProfileUrl = document.getElementById("scopusProfileUrl").value.trim();
+      let searchKeyword = document.getElementById("searchKeyword").value.trim();
+
+      if (!name || !scopusAuthorId) {
+        alert("Please enter Lecturer Name and Scopus Author ID.");
+        return;
+      }
+
+      if (!scopusProfileUrl) scopusProfileUrl = generateScopusProfileUrl(scopusAuthorId);
+      if (!searchKeyword) searchKeyword = name;
+
+      const confirmAdd = confirm(
+        "Add this lecturer?\n\n" +
+        "Name: " + name + "\n" +
+        "Scopus Author ID: " + scopusAuthorId
+      );
+
+      if (!confirmAdd) return;
+
+      const payload = {
+        name: name,
+        search_keyword: searchKeyword,
+        scopus_author_id: scopusAuthorId,
+        scopus_profile_url: scopusProfileUrl,
+        profile_url: scopusProfileUrl,
+        total_documents: null,
+        h_index: null,
+        h_index_status: "pending",
+        h_index_update_method: null,
+        update_method: null,
+        h_index_last_checked: null
+      };
+
+      const { error } = await insertResearcherWithFallback(db, payload);
+
+      if (error) {
+        if (String(error.message).toLowerCase().includes("row-level security")) {
+          alert(
+            "Failed to add lecturer because Supabase RLS blocked it.\n\n" +
+            "The HTML is fixed, but your database needs an admin insert/delete policy for the researchers table."
+          );
+        } else {
+          alert("Failed to add lecturer: " + error.message);
+        }
+
+        return;
+      }
+
+      showMessage("Lecturer added successfully. It will appear on the home page after data is imported/updated.", "success");
+      clearLecturerForm();
+      await loadDashboardData();
+    }
+
+    async function viewPublicationsById(researcherId) {
+      const researcher = researchersCache.find(
+        item => String(getResearcherId(item)) === String(researcherId)
+      );
+
+      if (!researcher) {
+        showMessage("Researcher not found.", "error");
+        return;
+      }
+
+      await viewPublications(getResearcherId(researcher), researcher.name || "Researcher");
+    }
+
+    async function fetchPublicationsForResearcher(db, researcherId) {
+      let response = await db
+        .from("publications")
+        .select("*")
+        .eq("researcher_id", researcherId);
+
+      if (!response.error) return response;
+
+      response = await db
+        .from("publications")
+        .select("*")
+        .eq("author_id", researcherId);
+
+      return response;
+    }
+
+    function sortPublications(publications) {
+      return [...publications].sort((a, b) => {
+        const aValue = a.publication_date || a.date || a.year || "";
+        const bValue = b.publication_date || b.date || b.year || "";
+
+        return String(bValue).localeCompare(String(aValue));
+      });
+    }
+
+    async function viewPublications(researcherId, researcherName) {
+      const db = getSupabaseClient();
+
+      if (!db) {
+        showMessage("Supabase connection not found.", "error");
+        return;
+      }
+
+      currentResearcherId = researcherId;
+      currentResearcherName = researcherName;
+
+      document.getElementById("publicationsModal").style.display = "block";
+      document.getElementById("modalResearcherName").textContent = researcherName + " - Publications";
+      document.getElementById("modalPublicationCount").textContent = "Loading publications...";
+      document.getElementById("publicationsTableBody").innerHTML = `<tr><td colspan="6">Loading publications...</td></tr>`;
+
+      const { data: publications, error } = await fetchPublicationsForResearcher(db, researcherId);
+
+      if (error) {
+        document.getElementById("publicationsTableBody").innerHTML = `
+          <tr>
+            <td colspan="6">Failed to load publications: ${escapeHtml(error.message)}</td>
+          </tr>
+        `;
+
+        document.getElementById("modalPublicationCount").textContent = "Error loading publications";
+        return;
+      }
+
+      renderPublicationsModal(sortPublications(publications || []));
+    }
+
+    function renderPublicationsModal(publications) {
+      const body = document.getElementById("publicationsTableBody");
+
+      document.getElementById("modalPublicationCount").textContent =
+        publications.length + " publications found";
+
+      if (!publications.length) {
+        body.innerHTML = `<tr><td colspan="6">No publications found for this researcher.</td></tr>`;
+        return;
+      }
+
+      body.innerHTML = publications.map(publication => {
+        const title = escapeHtml(publication.title || publication.publication_title || "-");
+        const journal = escapeHtml(publication.journal || publication.source_title || publication.source || "-");
+        const date = escapeHtml(publication.publication_date || publication.date || publication.year || "-");
+        const doi = publication.doi ? escapeHtml(publication.doi) : "-";
+        const link = publication.scopus_link || publication.link || publication.url || "#";
+        const safeLink = escapeHtml(link);
+        const safeId = escapeHtml(publication.id);
+
+        return `
+          <tr id="publication-row-${safeId}">
+            <td class="publication-title">${title}</td>
+            <td>${journal}</td>
+            <td>${date}</td>
+            <td>${doi}</td>
+            <td>
+              ${link !== "#" ? `<a class="link-btn" href="${safeLink}" target="_blank" rel="noopener noreferrer">Open</a>` : "-"}
+            </td>
+            <td>
+              <button class="action-btn delete-btn" onclick="deletePublication('${safeId}')">Delete</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    async function deletePublication(publicationId) {
+      const db = getSupabaseClient();
+
+      if (!db) {
+        alert("Supabase connection not found.");
+        return;
+      }
+
+      const confirmDelete = confirm(
+        "Are you sure you want to delete this publication?\n\n" +
+        "This will remove it from the database and the home page."
+      );
+
+      if (!confirmDelete) return;
+
+      const { error } = await db
+        .from("publications")
+        .delete()
+        .eq("id", publicationId);
+
+      if (error) {
+        alert("Delete failed: " + error.message);
+        return;
+      }
+
+      showMessage("Publication deleted successfully. The home page will reflect this change.", "success");
+
+      if (currentResearcherId) {
+        await viewPublications(currentResearcherId, currentResearcherName);
+      }
+
+      await loadDashboardData();
+    }
+
+    async function deleteLecturerPublications(db, researcherId) {
+      let response = await db
+        .from("publications")
+        .delete()
+        .eq("researcher_id", researcherId);
+
+      if (!response.error) return response;
+
+      response = await db
+        .from("publications")
+        .delete()
+        .eq("author_id", researcherId);
+
+      return response;
+    }
+
+    async function deleteLecturer(researcherId) {
+      const db = getSupabaseClient();
+
+      if (!db) {
+        alert("Supabase connection not found.");
+        return;
+      }
+
+      const researcher = researchersCache.find(
+        item => String(getResearcherId(item)) === String(researcherId)
+      );
+
+      const researcherName = researcher ? researcher.name : "this lecturer";
+
+      const confirmDelete = confirm(
+        "Are you sure you want to delete " + researcherName + "?\n\n" +
+        "This will also delete all publications connected to this lecturer.\n\n" +
+        "This action will affect the home page."
+      );
+
+      if (!confirmDelete) return;
+
+      const { error: publicationDeleteError } = await deleteLecturerPublications(db, researcherId);
+
+      if (publicationDeleteError) {
+        alert("Failed to delete lecturer publications: " + publicationDeleteError.message);
+        return;
+      }
+
+      const { error: researcherDeleteError } = await db
+        .from("researchers")
+        .delete()
+        .eq("id", researcherId);
+
+      if (researcherDeleteError) {
+        alert("Failed to delete lecturer: " + researcherDeleteError.message);
+        return;
+      }
+
+      showMessage(researcherName + " deleted successfully. Home page will update automatically.", "success");
+      await loadDashboardData();
+    }
+
+    function closePublicationsModal() {
+      document.getElementById("publicationsModal").style.display = "none";
+    }
+
+    function goHome() {
+      window.location.href = "home.html";
+    }
+
+    async function logout() {
+      const db = getSupabaseClient();
+
+      if (db) {
+        await db.auth.signOut();
+      }
+
+      window.location.href = "login.html";
+    }
+
+    async function initAdminPage() {
+      const allowed = await checkAdminAccess();
+
+      if (allowed) {
+        await loadDashboardData();
+      }
+    }
+
+    window.addEventListener("click", function(event) {
+      const modal = document.getElementById("publicationsModal");
+
+      if (event.target === modal) {
+        closePublicationsModal();
+      }
+    });
+
+    initAdminPage();
+  </script>
 </body>
 </html>
