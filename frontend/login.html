@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Login | Scopus Dashboard</title>
 
   <style>
@@ -12,28 +13,72 @@
       font-family: "Segoe UI", Arial, sans-serif;
     }
 
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      overflow-x: hidden;
+    }
+
     body {
       min-height: 100vh;
-      background: radial-gradient(circle at top left, #38bdf8, transparent 30%),
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.75), transparent 32%),
                   linear-gradient(135deg, #020617, #0f172a, #1e293b);
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 20px;
+      padding: 24px;
+      color: #0f172a;
+    }
+
+    .auth-shell {
+      width: 100%;
+      max-width: 980px;
+      display: grid;
+      grid-template-columns: 1fr 430px;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .info-panel,
+    .auth-card {
+      border-radius: 28px;
+      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.32);
+    }
+
+    .info-panel {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 64, 175, 0.88));
+      color: white;
+      padding: 42px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 470px;
+    }
+
+    .info-panel h2 {
+      font-size: clamp(28px, 4vw, 44px);
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+
+    .info-panel p {
+      color: #dbeafe;
+      line-height: 1.7;
+      font-size: 15px;
+      max-width: 520px;
     }
 
     .auth-card {
       width: 100%;
-      max-width: 430px;
-      background: rgba(255, 255, 255, 0.96);
-      border-radius: 26px;
+      background: rgba(255, 255, 255, 0.97);
       padding: 42px;
-      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(12px);
     }
 
     .brand {
       text-align: center;
-      margin-bottom: 32px;
+      margin-bottom: 30px;
     }
 
     .brand-icon {
@@ -47,7 +92,7 @@
       align-items: center;
       justify-content: center;
       font-size: 26px;
-      font-weight: bold;
+      font-weight: 900;
     }
 
     .brand h1 {
@@ -59,6 +104,7 @@
     .brand p {
       color: #64748b;
       font-size: 14px;
+      line-height: 1.5;
     }
 
     .form-group {
@@ -70,7 +116,7 @@
       margin-bottom: 8px;
       color: #334155;
       font-size: 14px;
-      font-weight: 600;
+      font-weight: 700;
     }
 
     input {
@@ -82,7 +128,7 @@
       font-size: 15px;
       background: #f8fafc;
       outline: none;
-      transition: 0.3s;
+      transition: 0.25s ease;
     }
 
     input:focus {
@@ -93,21 +139,26 @@
 
     .btn {
       width: 100%;
-      height: 54px;
+      min-height: 54px;
       border: none;
       border-radius: 15px;
       background: linear-gradient(135deg, #2563eb, #0891b2);
       color: white;
       font-size: 16px;
-      font-weight: 700;
+      font-weight: 800;
       cursor: pointer;
       margin-top: 8px;
-      transition: 0.3s;
+      transition: 0.25s ease;
     }
 
-    .btn:hover {
+    .btn:hover:not(:disabled) {
       transform: translateY(-2px);
       box-shadow: 0 14px 30px rgba(37, 99, 235, 0.35);
+    }
+
+    .btn:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
     }
 
     .switch {
@@ -115,12 +166,13 @@
       margin-top: 25px;
       font-size: 14px;
       color: #64748b;
+      line-height: 1.5;
     }
 
     .switch a {
       color: #2563eb;
       text-decoration: none;
-      font-weight: 700;
+      font-weight: 800;
     }
 
     .footer {
@@ -129,41 +181,177 @@
       font-size: 12px;
       color: #94a3b8;
     }
+
+    .error-message,
+    .success-message {
+      display: none;
+      margin-bottom: 18px;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      text-align: center;
+      line-height: 1.45;
+      font-weight: 650;
+    }
+
+    .error-message {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .success-message {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    @media (max-width: 900px) {
+      .auth-shell {
+        grid-template-columns: 1fr;
+        max-width: 520px;
+      }
+
+      .info-panel {
+        min-height: auto;
+        padding: 30px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      body {
+        padding: 16px;
+        align-items: flex-start;
+      }
+
+      .auth-card,
+      .info-panel {
+        border-radius: 22px;
+        padding: 24px;
+      }
+
+      .brand h1 {
+        font-size: 26px;
+      }
+
+      input,
+      .btn {
+        min-height: 50px;
+      }
+    }
   </style>
 </head>
 
 <body>
+  <main class="auth-shell">
+    <section class="info-panel">
+      <h2>MJIIT Researcher Monitoring Dashboard</h2>
+      <p>Login to view Scopus researcher profiles, h-index data, selected papers, publication links, and topic-based publication search.</p>
+    </section>
 
-  <div class="auth-card">
-    <div class="brand">
-      <div class="brand-icon">S</div>
-      <h1>Welcome Back</h1>
-      <p>Login to access the Scopus Dashboard</p>
-    </div>
+    <section class="auth-card">
+      <div class="brand">
+        <div class="brand-icon">S</div>
+        <h1>Welcome Back</h1>
+        <p>Login to access the Scopus Dashboard</p>
+      </div>
 
-    <div class="form-group">
-      <label>Email Address</label>
-      <input type="email" id="loginEmail" placeholder="Enter your email">
-    </div>
+      <div id="errorMessage" class="error-message"></div>
+      <div id="successMessage" class="success-message"></div>
 
-    <div class="form-group">
-      <label>Password</label>
-      <input type="password" id="loginPassword" placeholder="Enter your password">
-    </div>
+      <div class="form-group">
+        <label for="loginEmail">Email Address</label>
+        <input type="email" id="loginEmail" placeholder="Enter your email" autocomplete="email" />
+      </div>
 
-    <button class="btn" onclick="login()">Login</button>
+      <div class="form-group">
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password" />
+      </div>
 
-    <div class="switch">
-      Don’t have an account?
-      <a href="signup.html">Create account</a>
-    </div>
+      <button class="btn" id="loginBtn" onclick="login()">Login</button>
 
-    <div class="footer">
-      © 2026 Scopus Dashboard Project
-    </div>
-  </div>
+      <div class="switch">
+        Don’t have an account?
+        <a href="signup.html">Create account</a>
+      </div>
+
+      <div class="footer">© 2026 Scopus Dashboard Project</div>
+    </section>
+  </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="auth.js"></script>
+
+  <script>
+    function showError(message) {
+      const errorBox = document.getElementById("errorMessage");
+      const successBox = document.getElementById("successMessage");
+      successBox.style.display = "none";
+      errorBox.textContent = message;
+      errorBox.style.display = "block";
+    }
+
+    function showSuccess(message) {
+      const errorBox = document.getElementById("errorMessage");
+      const successBox = document.getElementById("successMessage");
+      errorBox.style.display = "none";
+      successBox.textContent = message;
+      successBox.style.display = "block";
+    }
+
+    function getSupabaseClient() {
+      if (typeof supabaseClient !== "undefined") return supabaseClient;
+      if (typeof supabase !== "undefined" && supabase.auth && supabase.from) return supabase;
+      return null;
+    }
+
+    async function login() {
+      const email = document.getElementById("loginEmail").value.trim();
+      const password = document.getElementById("loginPassword").value;
+      const loginBtn = document.getElementById("loginBtn");
+
+      if (!email || !password) {
+        showError("Please enter email and password.");
+        return;
+      }
+
+      const db = getSupabaseClient();
+      if (!db) {
+        showError("Supabase connection not found. Please check auth.js.");
+        return;
+      }
+
+      loginBtn.disabled = true;
+      loginBtn.textContent = "Logging in...";
+
+      const { data, error } = await db.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        loginBtn.disabled = false;
+        loginBtn.textContent = "Login";
+        showError(error.message);
+        return;
+      }
+
+      const { data: profile, error: profileError } = await db
+        .from("user_profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .single();
+
+      if (profileError || !profile) {
+        loginBtn.disabled = false;
+        loginBtn.textContent = "Login";
+        showError("Login successful, but this account has no role assigned.");
+        return;
+      }
+
+      showSuccess("Login successful. Redirecting...");
+      window.location.href = profile.role === "admin" ? "admin.html" : "home.html";
+    }
+
+    document.addEventListener("keydown", function(event) {
+      if (event.key === "Enter") login();
+    });
+  </script>
 </body>
 </html>
