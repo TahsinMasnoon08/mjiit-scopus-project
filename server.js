@@ -11,6 +11,27 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Serve frontend files from frontend folder
+app.use(express.static(path.join(__dirname, "frontend")));
+
+// Homepage should open login.html first
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "frontend", "login.html"));
+});
+
+// Direct routes for pages
+app.get("/login", (req, res) => {
+  res.sendFile(path.join(__dirname, "frontend", "login.html"));
+});
+
+app.get("/index", (req, res) => {
+  res.sendFile(path.join(__dirname, "frontend", "index.html"));
+});
+
+app.get("/admin", (req, res) => {
+  res.sendFile(path.join(__dirname, "frontend", "admin.html"));
+});
+
 // Supabase backend client
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL,
@@ -22,15 +43,6 @@ const SCOPUS_API_URL = "https://api.elsevier.com/content/search/scopus";
 // 200 is enough for your current lecturers because the highest is around 179.
 const MAX_PUBLICATIONS_PER_RESEARCHER = 200;
 const SCOPUS_BATCH_SIZE = 25;
-
-// Test route
-// Serve login page first
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "login.html"));
-});
-
-// Serve frontend files
-app.use(express.static(path.join(__dirname, "public")));
 
 // Check keys
 app.get("/api/test-key", (req, res) => {
@@ -766,8 +778,14 @@ cron.schedule("0 0 1 * *", async () => {
   }
 });
 
+// For local development
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
+
+// For Vercel
+module.exports = app;
