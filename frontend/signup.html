@@ -1,376 +1,768 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sign Up | Scopus Dashboard</title>
+const express = require("express");
+const cors = require("cors");
+const cron = require("node-cron");
+const axios = require("axios");
+const { createClient } = require("@supabase/supabase-js");
+require("dotenv").config();
 
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: "Segoe UI", Arial, sans-serif;
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+// Supabase backend client
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
+
+const SCOPUS_API_URL = "https://api.elsevier.com/content/search/scopus";
+
+// 200 is enough for your current lecturers because the highest is around 179.
+const MAX_PUBLICATIONS_PER_RESEARCHER = 200;
+const SCOPUS_BATCH_SIZE = 25;
+
+// Test route
+app.get("/", (req, res) => {
+  res.send("Scopus Backend Running 🚀");
+});
+
+// Check keys
+app.get("/api/test-key", (req, res) => {
+  res.json({
+    scopusKeyLoaded: !!process.env.SCOPUS_API_KEY,
+    supabaseUrlLoaded: !!process.env.SUPABASE_URL,
+    supabaseServiceKeyLoaded: !!process.env.SUPABASE_SERVICE_KEY,
+  });
+});
+
+// Format Scopus paper data
+function formatPapers(entries, startIndex = 0) {
+  return entries.map((item, index) => {
+    const scopusLink =
+      item.link?.find((l) => l["@ref"] === "scopus")?.["@href"] || "#";
+
+    const scopusDocumentId =
+      item["dc:identifier"]?.replace("SCOPUS_ID:", "") ||
+      item["eid"] ||
+      scopusLink.match(/scp=([^&]+)/)?.[1] ||
+      "Not available";
+
+    return {
+      no: startIndex + index + 1,
+      title: item["dc:title"] || "No title",
+      doi: item["prism:doi"] || "No DOI",
+      scopus_document_id: scopusDocumentId,
+      journal: item["prism:publicationName"] || "No journal",
+      publication_date: item["prism:coverDate"] || "No date",
+      scopus_link: scopusLink,
+    };
+  });
+}
+
+// Fetch all Scopus publications using pagination
+async function fetchAllScopusPublications(scopusQuery) {
+  let allEntries = [];
+  let start = 0;
+  let totalResults = null;
+
+  while (allEntries.length < MAX_PUBLICATIONS_PER_RESEARCHER) {
+    const response = await axios.get(SCOPUS_API_URL, {
+      headers: {
+        "X-ELS-APIKey": process.env.SCOPUS_API_KEY,
+        Accept: "application/json",
+      },
+      params: {
+        query: scopusQuery,
+        view: "STANDARD",
+        count: SCOPUS_BATCH_SIZE,
+        start: start,
+        sort: "-coverDate",
+      },
+    });
+
+    const searchResults = response.data["search-results"] || {};
+    const entries = searchResults.entry || [];
+
+    if (totalResults === null) {
+      totalResults = Number(searchResults["opensearch:totalResults"] || 0);
     }
 
-    html,
-    body {
-      width: 100%;
-      min-height: 100%;
-      overflow-x: hidden;
+    if (entries.length === 0) {
+      break;
     }
 
-    body {
-      min-height: 100vh;
-      background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.7), transparent 30%),
-                  linear-gradient(135deg, #0f172a, #1e3a8a, #2563eb);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 24px;
-      color: #0f172a;
+    allEntries = allEntries.concat(entries);
+    start += entries.length;
+
+    if (start >= totalResults) {
+      break;
+    }
+  }
+
+  return {
+    totalResults: totalResults || 0,
+    entries: allEntries.slice(0, MAX_PUBLICATIONS_PER_RESEARCHER),
+  };
+}
+
+// Search route: name, DOI, or Author ID publications
+app.get("/api/search", async (req, res) => {
+  try {
+    const input = req.query.q?.trim();
+
+    if (!input) {
+      return res.status(400).json({
+        message: "Search query missing",
+      });
     }
 
-    .auth-shell {
-      width: 100%;
-      max-width: 980px;
-      display: grid;
-      grid-template-columns: 1fr 440px;
-      gap: 24px;
-      align-items: stretch;
+    const isDOI = input.includes("/");
+    const isNumericId = /^\d+$/.test(input);
+
+    let scopusQuery = "";
+
+    if (isDOI) {
+      scopusQuery = `DOI(${input})`;
+    } else if (isNumericId) {
+      scopusQuery = `AU-ID(${input})`;
+    } else {
+      scopusQuery = `AUTH(${input})`;
     }
 
-    .info-panel,
-    .auth-card {
-      border-radius: 28px;
-      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.28);
+    const { totalResults, entries } = await fetchAllScopusPublications(scopusQuery);
+    const papers = formatPapers(entries);
+
+    res.json({
+      type: isDOI ? "doi" : isNumericId ? "author_publications" : "papers",
+      keyword: input,
+      scopusQuery: scopusQuery,
+      totalResults: totalResults,
+      returnedResults: papers.length,
+      papers: papers,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Search failed",
+      error: error.response?.data || error.message,
+    });
+  }
+});
+
+// Get all researchers with their saved publications
+app.get("/api/researchers", async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("researchers")
+      .select(`
+        id,
+        name,
+        search_keyword,
+        scopus_author_id,
+        scopus_profile_url,
+        total_documents,
+        h_index,
+        h_index_last_checked,
+        h_index_status,
+        h_index_update_method,
+        selected_paper_1_title,
+        selected_paper_1_link,
+        selected_paper_2_title,
+        selected_paper_2_link,
+        publications (
+          id,
+          title,
+          doi,
+          scopus_document_id,
+          journal,
+          publication_date,
+          scopus_link
+        )
+      `)
+      .order("id", { ascending: true });
+
+    if (error) {
+      return res.status(500).json({
+        message: "Failed to load researchers",
+        error: error,
+      });
     }
 
-    .info-panel {
-      background: rgba(15, 23, 42, 0.9);
-      color: white;
-      padding: 42px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      min-height: 500px;
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to load researchers",
+      error: error.message,
+    });
+  }
+});
+
+// Import publications for one researcher
+app.get("/api/import-publications/:researcherId", async (req, res) => {
+  try {
+    const researcherId = req.params.researcherId;
+
+    const { data: researcher, error: researcherError } = await supabaseAdmin
+      .from("researchers")
+      .select("*")
+      .eq("id", researcherId)
+      .single();
+
+    if (researcherError || !researcher) {
+      return res.status(404).json({
+        message: "Researcher not found",
+        error: researcherError,
+      });
     }
 
-    .info-panel h2 {
-      font-size: clamp(28px, 4vw, 44px);
-      line-height: 1.15;
-      margin-bottom: 16px;
+    if (!researcher.scopus_author_id) {
+      return res.status(400).json({
+        message: "This researcher does not have a Scopus Author ID yet",
+        researcher: researcher.name,
+      });
     }
 
-    .info-panel p {
-      color: #dbeafe;
-      line-height: 1.7;
-      font-size: 15px;
-      max-width: 520px;
+    const scopusQuery = `AU-ID(${researcher.scopus_author_id})`;
+
+    const { totalResults, entries } = await fetchAllScopusPublications(scopusQuery);
+    const papers = formatPapers(entries);
+
+    const { error: deleteError } = await supabaseAdmin
+      .from("publications")
+      .delete()
+      .eq("researcher_id", researcherId);
+
+    if (deleteError) {
+      return res.status(500).json({
+        message: "Failed to delete old publications",
+        error: deleteError,
+      });
     }
 
-    .auth-card {
-      width: 100%;
-      background: rgba(255, 255, 255, 0.97);
-      padding: 40px;
-      backdrop-filter: blur(12px);
-    }
+    const publicationsToInsert = papers.map((paper) => ({
+      researcher_id: researcher.id,
+      title: paper.title,
+      doi: paper.doi,
+      scopus_document_id: paper.scopus_document_id,
+      journal: paper.journal,
+      publication_date: paper.publication_date,
+      scopus_link: paper.scopus_link,
+    }));
 
-    .brand {
-      text-align: center;
-      margin-bottom: 28px;
-    }
+    if (publicationsToInsert.length > 0) {
+      const { error: insertError } = await supabaseAdmin
+        .from("publications")
+        .insert(publicationsToInsert);
 
-    .brand-icon {
-      width: 58px;
-      height: 58px;
-      margin: 0 auto 15px;
-      border-radius: 18px;
-      background: linear-gradient(135deg, #2563eb, #38bdf8);
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 26px;
-      font-weight: 900;
-    }
-
-    .brand h1 {
-      color: #0f172a;
-      font-size: 28px;
-      margin-bottom: 8px;
-    }
-
-    .brand p {
-      color: #64748b;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    .form-group {
-      margin-bottom: 18px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 8px;
-      color: #334155;
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    input {
-      width: 100%;
-      height: 50px;
-      border: 1px solid #cbd5e1;
-      border-radius: 14px;
-      padding: 0 15px;
-      font-size: 15px;
-      outline: none;
-      transition: 0.25s ease;
-      background: #f8fafc;
-    }
-
-    input:focus {
-      border-color: #2563eb;
-      background: white;
-      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
-    }
-
-    .btn {
-      width: 100%;
-      min-height: 52px;
-      border: none;
-      border-radius: 14px;
-      background: linear-gradient(135deg, #2563eb, #1d4ed8);
-      color: white;
-      font-size: 16px;
-      font-weight: 800;
-      cursor: pointer;
-      margin-top: 8px;
-      transition: 0.25s ease;
-    }
-
-    .btn:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 12px 25px rgba(37, 99, 235, 0.35);
-    }
-
-    .btn:disabled {
-      opacity: 0.65;
-      cursor: not-allowed;
-    }
-
-    .switch {
-      text-align: center;
-      margin-top: 24px;
-      color: #64748b;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    .switch a {
-      color: #2563eb;
-      text-decoration: none;
-      font-weight: 800;
-    }
-
-    .footer {
-      text-align: center;
-      margin-top: 28px;
-      font-size: 12px;
-      color: #94a3b8;
-    }
-
-    .error-message,
-    .success-message {
-      display: none;
-      margin-bottom: 18px;
-      padding: 12px;
-      border-radius: 12px;
-      font-size: 14px;
-      text-align: center;
-      line-height: 1.45;
-      font-weight: 650;
-    }
-
-    .error-message {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-
-    .success-message {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    @media (max-width: 900px) {
-      .auth-shell {
-        grid-template-columns: 1fr;
-        max-width: 540px;
+      if (insertError) {
+        return res.status(500).json({
+          message: "Failed to save publications to Supabase",
+          error: insertError,
+        });
       }
-
-      .info-panel {
-        min-height: auto;
-        padding: 30px;
-      }
     }
 
-    @media (max-width: 520px) {
-      body {
-        padding: 16px;
-        align-items: flex-start;
-      }
+    const { error: updateTotalError } = await supabaseAdmin
+      .from("researchers")
+      .update({
+        total_documents: totalResults,
+      })
+      .eq("id", researcher.id);
 
-      .auth-card,
-      .info-panel {
-        border-radius: 22px;
-        padding: 24px;
-      }
-
-      .brand h1 {
-        font-size: 25px;
-      }
-
-      input,
-      .btn {
-        min-height: 50px;
-      }
-    }
-  </style>
-</head>
-
-<body>
-  <main class="auth-shell">
-    <section class="info-panel">
-      <h2>Create your dashboard account</h2>
-      <p>Register to access the MJIIT Scopus Research Monitoring System. New accounts are created as users by default unless the administrator changes the role in Supabase.</p>
-    </section>
-
-    <section class="auth-card">
-      <div class="brand">
-        <div class="brand-icon">S</div>
-        <h1>Create Account</h1>
-        <p>MJIIT Scopus Research Monitoring System</p>
-      </div>
-
-      <div id="errorMessage" class="error-message"></div>
-      <div id="successMessage" class="success-message"></div>
-
-      <div class="form-group">
-        <label for="fullName">Full Name</label>
-        <input type="text" id="fullName" placeholder="Enter your full name" autocomplete="name" />
-      </div>
-
-      <div class="form-group">
-        <label for="signupEmail">Email Address</label>
-        <input type="email" id="signupEmail" placeholder="Enter your email" autocomplete="email" />
-      </div>
-
-      <div class="form-group">
-        <label for="signupPassword">Password</label>
-        <input type="password" id="signupPassword" placeholder="Create password" autocomplete="new-password" />
-      </div>
-
-      <button class="btn" id="signupBtn" onclick="signUp()">Sign Up</button>
-
-      <div class="switch">
-        Already have an account?
-        <a href="login.html">Login</a>
-      </div>
-
-      <div class="footer">© 2026 Scopus Dashboard Project</div>
-    </section>
-  </main>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="auth.js"></script>
-
-  <script>
-    function showError(message) {
-      const errorBox = document.getElementById("errorMessage");
-      const successBox = document.getElementById("successMessage");
-      successBox.style.display = "none";
-      errorBox.textContent = message;
-      errorBox.style.display = "block";
+    if (updateTotalError) {
+      return res.status(500).json({
+        message: "Failed to update researcher total documents",
+        error: updateTotalError,
+      });
     }
 
-    function showSuccess(message) {
-      const errorBox = document.getElementById("errorMessage");
-      const successBox = document.getElementById("successMessage");
-      errorBox.style.display = "none";
-      successBox.textContent = message;
-      successBox.style.display = "block";
+    res.json({
+      message: "Publications imported successfully",
+      researcher: researcher.name,
+      scopusAuthorId: researcher.scopus_author_id,
+      totalFoundInScopus: totalResults,
+      savedToDatabase: publicationsToInsert.length,
+      publications: publicationsToInsert,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Import failed",
+      error: error.response?.data || error.message,
+    });
+  }
+});
+
+// Import publications for all researchers that have Scopus Author ID
+app.get("/api/import-all-publications", async (req, res) => {
+  try {
+    const { data: researchers, error: researchersError } = await supabaseAdmin
+      .from("researchers")
+      .select("*")
+      .not("scopus_author_id", "is", null)
+      .order("id", { ascending: true });
+
+    if (researchersError) {
+      return res.status(500).json({
+        message: "Failed to load researchers",
+        error: researchersError,
+      });
     }
 
-    function getSupabaseClient() {
-      if (typeof supabaseClient !== "undefined") return supabaseClient;
-      if (typeof supabase !== "undefined" && supabase.auth && supabase.from) return supabase;
-      return null;
-    }
+    const results = [];
 
-    async function signUp() {
-      const fullName = document.getElementById("fullName").value.trim();
-      const email = document.getElementById("signupEmail").value.trim();
-      const password = document.getElementById("signupPassword").value;
-      const signupBtn = document.getElementById("signupBtn");
+    for (const researcher of researchers) {
+      try {
+        const scopusQuery = `AU-ID(${researcher.scopus_author_id})`;
 
-      if (!fullName || !email || !password) {
-        showError("Please fill in all fields.");
-        return;
-      }
+        const { totalResults, entries } = await fetchAllScopusPublications(scopusQuery);
+        const papers = formatPapers(entries);
 
-      if (password.length < 6) {
-        showError("Password must be at least 6 characters.");
-        return;
-      }
+        await supabaseAdmin
+          .from("publications")
+          .delete()
+          .eq("researcher_id", researcher.id);
 
-      const db = getSupabaseClient();
-      if (!db) {
-        showError("Supabase connection not found. Please check auth.js.");
-        return;
-      }
+        const publicationsToInsert = papers.map((paper) => ({
+          researcher_id: researcher.id,
+          title: paper.title,
+          doi: paper.doi,
+          scopus_document_id: paper.scopus_document_id,
+          journal: paper.journal,
+          publication_date: paper.publication_date,
+          scopus_link: paper.scopus_link,
+        }));
 
-      signupBtn.disabled = true;
-      signupBtn.textContent = "Creating account...";
+        if (publicationsToInsert.length > 0) {
+          const { error: insertError } = await supabaseAdmin
+            .from("publications")
+            .insert(publicationsToInsert);
 
-      const { data, error } = await db.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName
+          if (insertError) {
+            results.push({
+              researcher: researcher.name,
+              scopusAuthorId: researcher.scopus_author_id,
+              status: "failed",
+              error: insertError,
+            });
+            continue;
           }
         }
-      });
 
-      if (error) {
-        signupBtn.disabled = false;
-        signupBtn.textContent = "Sign Up";
-        showError(error.message);
-        return;
+        const { error: updateTotalError } = await supabaseAdmin
+          .from("researchers")
+          .update({
+            total_documents: totalResults,
+          })
+          .eq("id", researcher.id);
+
+        if (updateTotalError) {
+          results.push({
+            researcher: researcher.name,
+            scopusAuthorId: researcher.scopus_author_id,
+            status: "failed",
+            error: updateTotalError,
+          });
+          continue;
+        }
+
+        results.push({
+          researcher: researcher.name,
+          scopusAuthorId: researcher.scopus_author_id,
+          status: "success",
+          totalFoundInScopus: totalResults,
+          savedToDatabase: publicationsToInsert.length,
+        });
+      } catch (singleError) {
+        results.push({
+          researcher: researcher.name,
+          scopusAuthorId: researcher.scopus_author_id,
+          status: "failed",
+          error: singleError.response?.data || singleError.message,
+        });
       }
-
-      if (data.user) {
-        await db.from("user_profiles").insert([
-          {
-            id: data.user.id,
-            full_name: fullName,
-            email: email,
-            role: "user"
-          }
-        ]);
-      }
-
-      showSuccess("Account created. Please login.");
-      setTimeout(() => {
-        window.location.href = "login.html";
-      }, 1600);
     }
 
-    document.addEventListener("keydown", function(event) {
-      if (event.key === "Enter") signUp();
+    res.json({
+      message: "Import all finished",
+      totalResearchers: researchers.length,
+      results: results,
     });
-  </script>
-</body>
-</html>
+  } catch (error) {
+    res.status(500).json({
+      message: "Import all failed",
+      error: error.response?.data || error.message,
+    });
+  }
+});
+
+// RPA route: update H-index only using POST
+app.post("/api/update-hindex", async (req, res) => {
+  try {
+    const { scopus_author_id, h_index } = req.body;
+
+    console.log("Incoming RPA H-index data:", req.body);
+
+    if (!scopus_author_id || h_index === undefined || h_index === null) {
+      return res.status(400).json({
+        success: false,
+        error: "scopus_author_id and h_index are required",
+      });
+    }
+
+    const cleanHIndex = Number(h_index);
+
+    if (Number.isNaN(cleanHIndex)) {
+      return res.status(400).json({
+        success: false,
+        error: "h_index must be a valid number",
+        received: h_index,
+      });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("researchers")
+      .update({
+        h_index: cleanHIndex,
+        h_index_last_checked: new Date().toISOString(),
+        h_index_status: "updated",
+        h_index_update_method: "rpa",
+      })
+      .eq("scopus_author_id", String(scopus_author_id))
+      .select();
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "No researcher found with this scopus_author_id",
+        scopus_author_id,
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "H-index updated successfully",
+      data,
+    });
+  } catch (err) {
+    console.error("Update H-index error:", err.message);
+
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+});
+
+// RPA route: update H-index and selected papers using POST
+app.post("/api/update-hindex-selected-papers", async (req, res) => {
+  try {
+    const {
+      scopus_author_id,
+      h_index,
+      selected_paper_1_title,
+      selected_paper_1_link,
+      selected_paper_2_title,
+      selected_paper_2_link,
+    } = req.body;
+
+    console.log("Incoming RPA H-index + selected papers data:", req.body);
+
+    if (!scopus_author_id || h_index === undefined || h_index === null) {
+      return res.status(400).json({
+        success: false,
+        error: "scopus_author_id and h_index are required",
+      });
+    }
+
+    const cleanHIndex = Number(h_index);
+
+    if (Number.isNaN(cleanHIndex)) {
+      return res.status(400).json({
+        success: false,
+        error: "h_index must be a valid number",
+        received: h_index,
+      });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("researchers")
+      .update({
+        h_index: cleanHIndex,
+        selected_paper_1_title: selected_paper_1_title || null,
+        selected_paper_1_link: selected_paper_1_link || null,
+        selected_paper_2_title: selected_paper_2_title || null,
+        selected_paper_2_link: selected_paper_2_link || null,
+        h_index_last_checked: new Date().toISOString(),
+        h_index_status: "updated",
+        h_index_update_method: "rpa",
+      })
+      .eq("scopus_author_id", String(scopus_author_id))
+      .select();
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "No researcher found with this scopus_author_id",
+        scopus_author_id,
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "H-index and selected papers updated successfully",
+      data,
+    });
+  } catch (err) {
+    console.error("Update H-index selected papers error:", err.message);
+
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+});
+
+// Power Automate friendly GET route: update H-index only
+app.get("/api/update-hindex-rpa", async (req, res) => {
+  try {
+    const { scopus_author_id, h_index } = req.query;
+
+    console.log("Incoming RPA GET data:", req.query);
+
+    if (!scopus_author_id || h_index === undefined || h_index === null) {
+      return res.status(400).json({
+        success: false,
+        error: "scopus_author_id and h_index are required",
+      });
+    }
+
+    const cleanHIndex = Number(h_index);
+
+    if (Number.isNaN(cleanHIndex)) {
+      return res.status(400).json({
+        success: false,
+        error: "h_index must be a valid number",
+        received: h_index,
+      });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("researchers")
+      .update({
+        h_index: cleanHIndex,
+        h_index_last_checked: new Date().toISOString(),
+        h_index_status: "updated",
+        h_index_update_method: "rpa",
+      })
+      .eq("scopus_author_id", String(scopus_author_id))
+      .select();
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "No researcher found with this scopus_author_id",
+        scopus_author_id,
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "H-index updated successfully from Power Automate",
+      data,
+    });
+  } catch (err) {
+    console.error("RPA GET H-index update error:", err.message);
+
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+});
+
+// Power Automate friendly GET route: update H-index and selected papers
+app.get("/api/update-selected-papers-rpa", async (req, res) => {
+  try {
+    const {
+      scopus_author_id,
+      h_index,
+      selected_paper_1_title,
+      selected_paper_2_title,
+    } = req.query;
+
+    console.log("Incoming selected papers from RPA:", req.query);
+
+    if (!scopus_author_id || h_index === undefined || h_index === null) {
+      return res.status(400).json({
+        success: false,
+        error: "scopus_author_id and h_index are required",
+      });
+    }
+
+    const cleanHIndex = Number(h_index);
+
+    if (Number.isNaN(cleanHIndex)) {
+      return res.status(400).json({
+        success: false,
+        error: "h_index must be a valid number",
+        received: h_index,
+      });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("researchers")
+      .update({
+        h_index: cleanHIndex,
+        selected_paper_1_title: selected_paper_1_title || null,
+        selected_paper_2_title: selected_paper_2_title || null,
+        h_index_last_checked: new Date().toISOString(),
+        h_index_status: "updated",
+        h_index_update_method: "rpa",
+      })
+      .eq("scopus_author_id", String(scopus_author_id))
+      .select();
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "No researcher found with this Scopus Author ID",
+        scopus_author_id,
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "H-index and selected papers updated successfully",
+      data,
+    });
+  } catch (err) {
+    console.error("Selected papers update error:", err.message);
+
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+});
+
+// RPA route: get researchers for Power Automate loop
+app.get("/api/rpa-researchers", async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("researchers")
+      .select("id, name, scopus_author_id, scopus_profile_url")
+      .not("scopus_author_id", "is", null)
+      .not("scopus_profile_url", "is", null)
+      .order("id", { ascending: true });
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      total: data.length,
+      researchers: data,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+});
+
+// Optional monthly import job
+// This imports publication list only, not H-index.
+// H-index will come from Power Automate RPA.
+cron.schedule("0 0 1 * *", async () => {
+  console.log("Monthly publication import cron started...");
+
+  try {
+    const { data: researchers, error: researchersError } = await supabaseAdmin
+      .from("researchers")
+      .select("*")
+      .not("scopus_author_id", "is", null)
+      .order("id", { ascending: true });
+
+    if (researchersError) {
+      console.error("Cron failed to load researchers:", researchersError);
+      return;
+    }
+
+    for (const researcher of researchers) {
+      try {
+        const scopusQuery = `AU-ID(${researcher.scopus_author_id})`;
+
+        const { totalResults, entries } = await fetchAllScopusPublications(scopusQuery);
+        const papers = formatPapers(entries);
+
+        await supabaseAdmin
+          .from("publications")
+          .delete()
+          .eq("researcher_id", researcher.id);
+
+        const publicationsToInsert = papers.map((paper) => ({
+          researcher_id: researcher.id,
+          title: paper.title,
+          doi: paper.doi,
+          scopus_document_id: paper.scopus_document_id,
+          journal: paper.journal,
+          publication_date: paper.publication_date,
+          scopus_link: paper.scopus_link,
+        }));
+
+        if (publicationsToInsert.length > 0) {
+          const { error: insertError } = await supabaseAdmin
+            .from("publications")
+            .insert(publicationsToInsert);
+
+          if (insertError) {
+            console.error(`Cron insert failed for ${researcher.name}:`, insertError);
+            continue;
+          }
+        }
+
+        const { error: updateTotalError } = await supabaseAdmin
+          .from("researchers")
+          .update({
+            total_documents: totalResults,
+          })
+          .eq("id", researcher.id);
+
+        if (updateTotalError) {
+          console.error(
+            `Cron total_documents update failed for ${researcher.name}:`,
+            updateTotalError
+          );
+          continue;
+        }
+
+        console.log(
+          `Cron imported ${publicationsToInsert.length}/${totalResults} publications for ${researcher.name}`
+        );
+      } catch (singleError) {
+        console.error(
+          `Cron failed for researcher:`,
+          singleError.response?.data || singleError.message
+        );
+      }
+    }
+
+    console.log("Monthly publication import cron finished.");
+  } catch (error) {
+    console.error("Monthly publication import cron failed:", error.message);
+  }
+});
+
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
